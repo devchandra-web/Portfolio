@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { AdminHeader } from "@/components/admin/AdminHeader";
-import { StatCard } from "@/components/admin/StatCard";
+import { AdminDashboardStats } from "@/components/admin/AdminDashboardStats";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { PROJECTS_DATA } from "@/data/projects";
@@ -84,57 +84,16 @@ export default async function AdminDashboardPage() {
       />
 
       {/* Statistics Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-        <StatCard
-          title="Form Submissions"
-          value={contactCount}
-          subtitle="View in Admin Panel"
-          icon={Mail}
-          color="cyan"
-        />
-        <StatCard
-          title="Resume Downloads"
-          value={downloadCount}
-          subtitle="Tracked download events"
-          icon={Download}
-          color="purple"
-        />
-        <StatCard
-          title="Total Projects"
-          value={totalProjects}
-          subtitle={`${publishedProjects} Published • ${draftProjects} Drafts`}
-          icon={FolderKanban}
-          color="emerald"
-        />
-        <StatCard
-          title="Published Projects"
-          value={publishedProjects}
-          subtitle="Visible on public site"
-          icon={CheckCircle2}
-          color="cyan"
-        />
-        <StatCard
-          title="Total Skills"
-          value={totalSkills}
-          subtitle="Categorized tech stack"
-          icon={Code2}
-          color="purple"
-        />
-        <StatCard
-          title="Experience Entries"
-          value={totalExperience}
-          subtitle="Work timeline cards"
-          icon={Briefcase}
-          color="indigo"
-        />
-        <StatCard
-          title="Last Updated"
-          value={lastUpdated}
-          subtitle="Instant revalidation"
-          icon={Clock}
-          color="emerald"
-        />
-      </div>
+      <AdminDashboardStats
+        initialContactCount={contactCount}
+        initialDownloadCount={downloadCount}
+        totalProjects={totalProjects}
+        publishedProjects={publishedProjects}
+        draftProjects={draftProjects}
+        totalSkills={totalSkills}
+        totalExperience={totalExperience}
+        lastUpdated={lastUpdated}
+      />
 
       {/* Quick Actions & Recent Shortcut Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
