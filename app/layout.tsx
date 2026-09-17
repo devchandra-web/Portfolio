@@ -21,13 +21,6 @@ export const metadata: Metadata = {
   title: "Chandra Shekhar | Frontend Developer",
   description:
     "Frontend Developer specializing in building responsive, scalable, and visually engaging web applications with React, Next.js, TypeScript, and Tailwind CSS.",
-  icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
-  },
   keywords: [
     "Chandra Shekhar",
     "Frontend Developer",
@@ -35,7 +28,7 @@ export const metadata: Metadata = {
     "Next.js Developer",
     "TypeScript Developer",
     "Tailwind CSS",
-    "Web Portfolio",
+    "Web Portfolio"
   ],
   authors: [{ name: "Chandra Shekhar" }],
   creator: "Chandra Shekhar",

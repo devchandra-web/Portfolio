@@ -7,7 +7,7 @@ async function main() {
   console.log("Seeding database...");
 
   // 1. Initial Admin User
-  const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
+  const adminEmail = process.env.ADMIN_EMAIL || "cd6388881581@gmail.com";
   const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
   const passwordHash = await bcrypt.hash(adminPassword, 12);
 
@@ -72,7 +72,7 @@ async function main() {
       siteName: "Chandra Shekhar Portfolio",
       developerName: "Chandra Shekhar",
       jobTitle: "Frontend Developer",
-      email: "chandrashekhar.dev@example.com",
+      email: "cd6388881581@gmail.com",
       location: "Bengaluru, India",
       resumeUrl: "/resume.pdf",
       availability: "Available for Hire & Frontend Projects",

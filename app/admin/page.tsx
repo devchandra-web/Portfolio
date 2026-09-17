@@ -41,11 +41,11 @@ export default async function AdminDashboardPage() {
 
   try {
     const [pTotal, pPub, pDraft, sTotal, eTotal, subs, dls] = await Promise.all([
-      prisma.project.count(),
-      prisma.project.count({ where: { published: true } }),
-      prisma.project.count({ where: { published: false } }),
-      prisma.skill.count(),
-      prisma.experience.count(),
+      prisma.project?.count ? prisma.project.count().catch(() => 0) : Promise.resolve(0),
+      prisma.project?.count ? prisma.project.count({ where: { published: true } }).catch(() => 0) : Promise.resolve(0),
+      prisma.project?.count ? prisma.project.count({ where: { published: false } }).catch(() => 0) : Promise.resolve(0),
+      prisma.skill?.count ? prisma.skill.count().catch(() => 0) : Promise.resolve(0),
+      prisma.experience?.count ? prisma.experience.count().catch(() => 0) : Promise.resolve(0),
       getContactSubmissions(),
       getResumeDownloads(),
     ]);

@@ -131,16 +131,18 @@ export async function addContactSubmission(data: {
 
   // 2. Save to Database via Prisma if available
   try {
-    await prisma.contactSubmission.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        subject: data.subject,
-        message: data.message,
-      },
-    });
-  } catch (err) {
-    console.warn("Prisma DB save failed, saved to serverless store fallback:", err);
+    if (prisma && "contactSubmission" in prisma && typeof (prisma as any).contactSubmission?.create === "function") {
+      await (prisma as any).contactSubmission.create({
+        data: {
+          name: data.name,
+          email: data.email,
+          subject: data.subject,
+          message: data.message,
+        },
+      });
+    }
+  } catch {
+    // Database offline or table missing, fallback store handled
   }
 
   return newItem;
@@ -148,19 +150,21 @@ export async function addContactSubmission(data: {
 
 export async function getContactSubmissions(): Promise<ContactItem[]> {
   try {
-    const dbItems = await prisma.contactSubmission.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-    if (dbItems && dbItems.length > 0) {
-      return dbItems.map((item) => ({
-        id: item.id,
-        name: item.name,
-        email: item.email,
-        subject: item.subject,
-        message: item.message,
-        read: item.read,
-        createdAt: item.createdAt.toISOString(),
-      }));
+    if (prisma && "contactSubmission" in prisma && typeof (prisma as any).contactSubmission?.findMany === "function") {
+      const dbItems = await (prisma as any).contactSubmission.findMany({
+        orderBy: { createdAt: "desc" },
+      });
+      if (dbItems && dbItems.length > 0) {
+        return dbItems.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          email: item.email,
+          subject: item.subject,
+          message: item.message,
+          read: item.read,
+          createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : String(item.createdAt),
+        }));
+      }
     }
   } catch {
     // DB offline or credentials missing, use fallback store
@@ -178,10 +182,12 @@ export async function markContactAsRead(id: string) {
   writeStoreFile({ ...store, submissions: updatedSubmissions });
 
   try {
-    await prisma.contactSubmission.update({
-      where: { id },
-      data: { read: true },
-    });
+    if (prisma && "contactSubmission" in prisma && typeof (prisma as any).contactSubmission?.update === "function") {
+      await (prisma as any).contactSubmission.update({
+        where: { id },
+        data: { read: true },
+      });
+    }
   } catch {
     // Fallback handled
   }
@@ -193,9 +199,11 @@ export async function deleteContactSubmission(id: string) {
   writeStoreFile({ ...store, submissions: updatedSubmissions });
 
   try {
-    await prisma.contactSubmission.delete({
-      where: { id },
-    });
+    if (prisma && "contactSubmission" in prisma && typeof (prisma as any).contactSubmission?.delete === "function") {
+      await (prisma as any).contactSubmission.delete({
+        where: { id },
+      });
+    }
   } catch {
     // Fallback handled
   }
@@ -220,15 +228,17 @@ export async function addResumeDownload(email: string, ip?: string, userAgent?: 
 
   // 2. Save to Database via Prisma if available
   try {
-    await prisma.resumeDownload.create({
-      data: {
-        email: email || "Not Provided",
-        ip: ip || "127.0.0.1",
-        userAgent: userAgent || "Unknown Browser",
-      },
-    });
-  } catch (err) {
-    console.warn("Prisma DB save failed, saved to serverless store fallback:", err);
+    if (prisma && "resumeDownload" in prisma && typeof (prisma as any).resumeDownload?.create === "function") {
+      await (prisma as any).resumeDownload.create({
+        data: {
+          email: email || "Not Provided",
+          ip: ip || "127.0.0.1",
+          userAgent: userAgent || "Unknown Browser",
+        },
+      });
+    }
+  } catch {
+    // DB save fallback handled silently
   }
 
   return newItem;
@@ -236,17 +246,19 @@ export async function addResumeDownload(email: string, ip?: string, userAgent?: 
 
 export async function getResumeDownloads(): Promise<ResumeDownloadItem[]> {
   try {
-    const dbItems = await prisma.resumeDownload.findMany({
-      orderBy: { downloadedAt: "desc" },
-    });
-    if (dbItems && dbItems.length > 0) {
-      return dbItems.map((item) => ({
-        id: item.id,
-        email: item.email || "Not Provided",
-        ip: item.ip || "127.0.0.1",
-        userAgent: item.userAgent || "Unknown Browser",
-        downloadedAt: item.downloadedAt.toISOString(),
-      }));
+    if (prisma && "resumeDownload" in prisma && typeof (prisma as any).resumeDownload?.findMany === "function") {
+      const dbItems = await (prisma as any).resumeDownload.findMany({
+        orderBy: { downloadedAt: "desc" },
+      });
+      if (dbItems && dbItems.length > 0) {
+        return dbItems.map((item: any) => ({
+          id: item.id,
+          email: item.email || "Not Provided",
+          ip: item.ip || "127.0.0.1",
+          userAgent: item.userAgent || "Unknown Browser",
+          downloadedAt: item.downloadedAt instanceof Date ? item.downloadedAt.toISOString() : String(item.downloadedAt),
+        }));
+      }
     }
   } catch {
     // DB offline, fallback to memory/file store
@@ -262,9 +274,11 @@ export async function deleteResumeDownload(id: string) {
   writeStoreFile({ ...store, downloads: updatedDownloads });
 
   try {
-    await prisma.resumeDownload.delete({
-      where: { id },
-    });
+    if (prisma && "resumeDownload" in prisma && typeof (prisma as any).resumeDownload?.delete === "function") {
+      await (prisma as any).resumeDownload.delete({
+        where: { id },
+      });
+    }
   } catch {
     // Fallback handled
   }
