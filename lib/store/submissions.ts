@@ -32,29 +32,6 @@ const globalForSubmissions = globalThis as unknown as {
   inMemoryStore: StorageData | undefined;
 };
 
-const INITIAL_DATA: StorageData = {
-  submissions: [
-    {
-      id: "sub-1",
-      name: "Rahul Sharma",
-      email: "rahul.sharma@example.com",
-      subject: "Frontend Developer Inquiry",
-      message: "Hi Chandra, we reviewed your profile and experience in React and Next.js. We would like to discuss a Frontend Developer role with our team.",
-      read: false,
-      createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-    },
-  ],
-  downloads: [
-    {
-      id: "dl-1",
-      email: "hr.manager@techcorp.com",
-      ip: "152.58.16.42",
-      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-      downloadedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-    },
-  ],
-};
-
 if (!globalForSubmissions.inMemoryStore) {
   globalForSubmissions.inMemoryStore = readStoreFile();
 }
@@ -192,7 +169,6 @@ export async function addContactSubmission(data: {
 
 export async function getContactSubmissions(): Promise<ContactItem[]> {
   let dbSubmissions: ContactItem[] = [];
-  let dbSuccess = false;
 
   try {
     if (prisma && "contactSubmission" in prisma && typeof (prisma as any).contactSubmission?.findMany === "function") {
@@ -200,7 +176,6 @@ export async function getContactSubmissions(): Promise<ContactItem[]> {
         orderBy: { createdAt: "desc" },
       });
       if (Array.isArray(dbItems)) {
-        dbSuccess = true;
         dbSubmissions = dbItems.map((item: any) => ({
           id: item.id,
           name: item.name,
@@ -229,8 +204,6 @@ export async function getContactSubmissions(): Promise<ContactItem[]> {
   // Sort by newest first
   combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  if (combined.length > 0) return combined;
-  if (!dbSuccess && store.submissions.length === 0) return INITIAL_DATA.submissions;
   return combined;
 }
 
@@ -319,7 +292,6 @@ export async function addResumeDownload(email: string, ip?: string, userAgent?: 
 
 export async function getResumeDownloads(): Promise<ResumeDownloadItem[]> {
   let dbDownloads: ResumeDownloadItem[] = [];
-  let dbSuccess = false;
 
   try {
     if (prisma && "resumeDownload" in prisma && typeof (prisma as any).resumeDownload?.findMany === "function") {
@@ -327,7 +299,6 @@ export async function getResumeDownloads(): Promise<ResumeDownloadItem[]> {
         orderBy: { downloadedAt: "desc" },
       });
       if (Array.isArray(dbItems)) {
-        dbSuccess = true;
         dbDownloads = dbItems.map((item: any) => ({
           id: item.id,
           email: item.email || "Not Provided",
@@ -352,8 +323,6 @@ export async function getResumeDownloads(): Promise<ResumeDownloadItem[]> {
 
   combined.sort((a, b) => new Date(b.downloadedAt).getTime() - new Date(a.downloadedAt).getTime());
 
-  if (combined.length > 0) return combined;
-  if (!dbSuccess && store.downloads.length === 0) return INITIAL_DATA.downloads;
   return combined;
 }
 
@@ -372,4 +341,5 @@ export async function deleteResumeDownload(id: string) {
     console.error("[DB Delete Resume Download Error]:", err);
   }
 }
+
 

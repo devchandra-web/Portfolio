@@ -40,14 +40,35 @@ export default function AdminMessagesPage() {
     if (!silent) setLoading(true);
     setIsSyncing(true);
     try {
+      const [subsRes, dlsRes] = await Promise.all([
+        fetch("/api/contact", { cache: "no-store" }),
+        fetch("/api/resume-download", { cache: "no-store" }),
+      ]);
+      if (subsRes.ok && dlsRes.ok) {
+        const subsJson = await subsRes.json();
+        const dlsJson = await dlsRes.json();
+        if (subsJson.success && Array.isArray(subsJson.data)) {
+          setSubmissions(subsJson.data);
+        }
+        if (dlsJson.success && Array.isArray(dlsJson.data)) {
+          setDownloads(dlsJson.data);
+        }
+      } else {
+        const [subs, dls] = await Promise.all([
+          fetchContactSubmissionsAction(),
+          fetchResumeDownloadsAction(),
+        ]);
+        setSubmissions(subs);
+        setDownloads(dls);
+      }
+    } catch {
+      // Fallback to Server Actions if fetch fails
       const [subs, dls] = await Promise.all([
         fetchContactSubmissionsAction(),
         fetchResumeDownloadsAction(),
       ]);
       setSubmissions(subs);
       setDownloads(dls);
-    } catch {
-      // Error handling
     } finally {
       setLoading(false);
       setIsSyncing(false);
@@ -56,10 +77,10 @@ export default function AdminMessagesPage() {
 
   useEffect(() => {
     loadData(false);
-    // Real-time polling every 5 seconds for instant updates
+    // Real-time live polling every 3 seconds for instant updates
     const interval = setInterval(() => {
       loadData(true);
-    }, 5000);
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
 
