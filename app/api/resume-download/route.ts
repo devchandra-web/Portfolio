@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addResumeDownload } from "@/lib/store/submissions";
+import { revalidatePath } from "next/cache";
+import { addResumeDownload, getResumeDownloads } from "@/lib/store/submissions";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +24,13 @@ export async function POST(req: NextRequest) {
 
     const download = await addResumeDownload(email, ip, userAgent);
 
+    try {
+      revalidatePath("/admin");
+      revalidatePath("/admin/messages");
+    } catch {
+      // Ignore cache revalidation errors
+    }
+
     console.log(`[RESUME CAPTURE] Captured email: ${email} from IP: ${ip}`);
 
     return NextResponse.json({
@@ -39,16 +49,32 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
-  const email = searchParams.get("email") || "Not Provided";
+  if (searchParams.has("email")) {
+    const email = searchParams.get("email") || "Not Provided";
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0] ||
+      req.headers.get("x-real-ip") ||
+      "127.0.0.1";
+    const userAgent = req.headers.get("user-agent") || "Unknown Browser";
 
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0] ||
-    req.headers.get("x-real-ip") ||
-    "127.0.0.1";
-  const userAgent = req.headers.get("user-agent") || "Unknown Browser";
+    await addResumeDownload(email, ip, userAgent);
 
-  await addResumeDownload(email, ip, userAgent);
+    try {
+      revalidatePath("/admin");
+      revalidatePath("/admin/messages");
+    } catch {
+      // Ignore cache revalidation errors
+    }
 
-  const url = new URL("/resume.pdf", req.url);
-  return NextResponse.redirect(url);
+    const url = new URL("/resume.pdf", req.url);
+    return NextResponse.redirect(url);
+  }
+
+  try {
+    const downloads = await getResumeDownloads();
+    return NextResponse.json({ success: true, data: downloads });
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch resume downloads" }, { status: 500 });
+  }
 }
+

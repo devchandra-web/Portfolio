@@ -63,24 +63,22 @@ function readStoreFile(): StorageData {
   let tmpData: Partial<StorageData> | null = null;
   let primaryData: Partial<StorageData> | null = null;
 
-  // 1. Try reading from /tmp (Vercel serverless)
   try {
     if (fs.existsSync(TMP_STORE_PATH)) {
       const content = fs.readFileSync(TMP_STORE_PATH, "utf-8");
       tmpData = JSON.parse(content);
     }
   } catch {
-    // Ignore error
+    // Ignore read errors
   }
 
-  // 2. Try reading from primary store path
   try {
     if (fs.existsSync(PRIMARY_STORE_PATH)) {
       const content = fs.readFileSync(PRIMARY_STORE_PATH, "utf-8");
       primaryData = JSON.parse(content);
     }
   } catch {
-    // Ignore error
+    // Ignore read errors
   }
 
   const submissions = [
@@ -93,7 +91,6 @@ function readStoreFile(): StorageData {
     ...(primaryData?.downloads || []),
   ];
 
-  // Deduplicate submissions by ID
   const uniqueSubmissions: ContactItem[] = [];
   for (const s of submissions) {
     if (s && s.id && !uniqueSubmissions.some((u) => u.id === s.id)) {
@@ -101,7 +98,6 @@ function readStoreFile(): StorageData {
     }
   }
 
-  // Deduplicate downloads by ID
   const uniqueDownloads: ResumeDownloadItem[] = [];
   for (const d of downloads) {
     if (d && d.id && !uniqueDownloads.some((u) => u.id === d.id)) {
@@ -110,22 +106,20 @@ function readStoreFile(): StorageData {
   }
 
   return {
-    submissions: uniqueSubmissions.length > 0 ? uniqueSubmissions : INITIAL_DATA.submissions,
-    downloads: uniqueDownloads.length > 0 ? uniqueDownloads : INITIAL_DATA.downloads,
+    submissions: uniqueSubmissions,
+    downloads: uniqueDownloads,
   };
 }
 
 function writeStoreFile(data: StorageData) {
   globalForSubmissions.inMemoryStore = data;
 
-  // Try writing to /tmp first (always writable in Vercel serverless)
   try {
     fs.writeFileSync(TMP_STORE_PATH, JSON.stringify(data, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Failed to write to /tmp store:", err);
+  } catch {
+    // Ephemeral /tmp write fallback
   }
 
-  // Also try writing to project data folder (works in local dev)
   try {
     const dir = path.dirname(PRIMARY_STORE_PATH);
     if (!fs.existsSync(dir)) {
@@ -133,7 +127,7 @@ function writeStoreFile(data: StorageData) {
     }
     fs.writeFileSync(PRIMARY_STORE_PATH, JSON.stringify(data, null, 2), "utf-8");
   } catch {
-    // Ignore EROFS error on Vercel
+    // Ignore EROFS on serverless (Vercel)
   }
 }
 
@@ -143,28 +137,12 @@ export async function addContactSubmission(data: {
   subject: string;
   message: string;
 }) {
-  const newItem: ContactItem = {
-    id: `sub-${Date.now()}`,
-    name: data.name,
-    email: data.email,
-    subject: data.subject,
-    message: data.message,
-    read: false,
-    createdAt: new Date().toISOString(),
-  };
+  let createdItem: ContactItem | null = null;
 
-  // 1. Save to Memory & File Store (Guarantees persistence even without live DB)
-  const currentStore = globalForSubmissions.inMemoryStore || readStoreFile();
-  const updatedStore = {
-    ...currentStore,
-    submissions: [newItem, ...currentStore.submissions.filter((s) => s.id !== newItem.id)],
-  };
-  writeStoreFile(updatedStore);
-
-  // 2. Save to Database via Prisma if available
+  // 1. Try DB insertion first via Prisma
   try {
     if (prisma && "contactSubmission" in prisma && typeof (prisma as any).contactSubmission?.create === "function") {
-      await (prisma as any).contactSubmission.create({
+      const dbRecord = await (prisma as any).contactSubmission.create({
         data: {
           name: data.name,
           email: data.email,
@@ -172,23 +150,57 @@ export async function addContactSubmission(data: {
           message: data.message,
         },
       });
+      if (dbRecord) {
+        createdItem = {
+          id: dbRecord.id,
+          name: dbRecord.name,
+          email: dbRecord.email,
+          subject: dbRecord.subject,
+          message: dbRecord.message,
+          read: dbRecord.read,
+          createdAt: dbRecord.createdAt instanceof Date ? dbRecord.createdAt.toISOString() : String(dbRecord.createdAt),
+        };
+      }
     }
-  } catch {
-    // Database offline or table missing, fallback store handled
+  } catch (err) {
+    console.error("[DB Contact Submission Error]:", err);
   }
 
-  return newItem;
+  // 2. If DB not available or failed, create local fallback item
+  if (!createdItem) {
+    createdItem = {
+      id: `sub-${Date.now()}`,
+      name: data.name,
+      email: data.email,
+      subject: data.subject,
+      message: data.message,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  // Save to in-memory/file store safely
+  const store = globalForSubmissions.inMemoryStore || readStoreFile();
+  const updatedStore = {
+    ...store,
+    submissions: [createdItem, ...store.submissions.filter((s) => s.id !== createdItem!.id)],
+  };
+  writeStoreFile(updatedStore);
+
+  return createdItem;
 }
 
 export async function getContactSubmissions(): Promise<ContactItem[]> {
   let dbSubmissions: ContactItem[] = [];
+  let dbSuccess = false;
 
   try {
     if (prisma && "contactSubmission" in prisma && typeof (prisma as any).contactSubmission?.findMany === "function") {
       const dbItems = await (prisma as any).contactSubmission.findMany({
         orderBy: { createdAt: "desc" },
       });
-      if (dbItems) {
+      if (Array.isArray(dbItems)) {
+        dbSuccess = true;
         dbSubmissions = dbItems.map((item: any) => ({
           id: item.id,
           name: item.name,
@@ -200,13 +212,13 @@ export async function getContactSubmissions(): Promise<ContactItem[]> {
         }));
       }
     }
-  } catch {
-    // DB offline or credentials missing, use fallback store
+  } catch (err) {
+    console.error("[DB Get Contact Submissions Error]:", err);
   }
 
   const store = globalForSubmissions.inMemoryStore || readStoreFile();
-  
-  // Merge DB submissions and local store submissions seamlessly
+
+  // Combine DB and in-memory store without duplicating IDs
   const combined = [...dbSubmissions];
   for (const item of store.submissions) {
     if (!combined.some((c) => c.id === item.id)) {
@@ -214,7 +226,12 @@ export async function getContactSubmissions(): Promise<ContactItem[]> {
     }
   }
 
-  return combined.length > 0 ? combined : INITIAL_DATA.submissions;
+  // Sort by newest first
+  combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  if (combined.length > 0) return combined;
+  if (!dbSuccess && store.submissions.length === 0) return INITIAL_DATA.submissions;
+  return combined;
 }
 
 export async function markContactAsRead(id: string) {
@@ -231,8 +248,8 @@ export async function markContactAsRead(id: string) {
         data: { read: true },
       });
     }
-  } catch {
-    // Fallback handled
+  } catch (err) {
+    console.error("[DB Mark Read Error]:", err);
   }
 }
 
@@ -247,55 +264,70 @@ export async function deleteContactSubmission(id: string) {
         where: { id },
       });
     }
-  } catch {
-    // Fallback handled
+  } catch (err) {
+    console.error("[DB Delete Contact Error]:", err);
   }
 }
 
 export async function addResumeDownload(email: string, ip?: string, userAgent?: string) {
-  const newItem: ResumeDownloadItem = {
-    id: `dl-${Date.now()}`,
-    email: email || "Not Provided",
-    ip: ip || "127.0.0.1",
-    userAgent: userAgent || "Unknown Browser",
-    downloadedAt: new Date().toISOString(),
-  };
+  let createdItem: ResumeDownloadItem | null = null;
 
-  // 1. Save to Memory & File Store (Guarantees persistence even without live DB)
-  const currentStore = globalForSubmissions.inMemoryStore || readStoreFile();
-  const updatedStore = {
-    ...currentStore,
-    downloads: [newItem, ...currentStore.downloads],
-  };
-  writeStoreFile(updatedStore);
-
-  // 2. Save to Database via Prisma if available
+  // 1. Try DB insertion first via Prisma
   try {
     if (prisma && "resumeDownload" in prisma && typeof (prisma as any).resumeDownload?.create === "function") {
-      await (prisma as any).resumeDownload.create({
+      const dbRecord = await (prisma as any).resumeDownload.create({
         data: {
           email: email || "Not Provided",
           ip: ip || "127.0.0.1",
           userAgent: userAgent || "Unknown Browser",
         },
       });
+      if (dbRecord) {
+        createdItem = {
+          id: dbRecord.id,
+          email: dbRecord.email || "Not Provided",
+          ip: dbRecord.ip || "127.0.0.1",
+          userAgent: dbRecord.userAgent || "Unknown Browser",
+          downloadedAt: dbRecord.downloadedAt instanceof Date ? dbRecord.downloadedAt.toISOString() : String(dbRecord.downloadedAt),
+        };
+      }
     }
-  } catch {
-    // DB save fallback handled silently
+  } catch (err) {
+    console.error("[DB Resume Download Error]:", err);
   }
 
-  return newItem;
+  // 2. If DB not available or failed, create local fallback item
+  if (!createdItem) {
+    createdItem = {
+      id: `dl-${Date.now()}`,
+      email: email || "Not Provided",
+      ip: ip || "127.0.0.1",
+      userAgent: userAgent || "Unknown Browser",
+      downloadedAt: new Date().toISOString(),
+    };
+  }
+
+  const store = globalForSubmissions.inMemoryStore || readStoreFile();
+  const updatedStore = {
+    ...store,
+    downloads: [createdItem, ...store.downloads.filter((d) => d.id !== createdItem!.id)],
+  };
+  writeStoreFile(updatedStore);
+
+  return createdItem;
 }
 
 export async function getResumeDownloads(): Promise<ResumeDownloadItem[]> {
   let dbDownloads: ResumeDownloadItem[] = [];
+  let dbSuccess = false;
 
   try {
     if (prisma && "resumeDownload" in prisma && typeof (prisma as any).resumeDownload?.findMany === "function") {
       const dbItems = await (prisma as any).resumeDownload.findMany({
         orderBy: { downloadedAt: "desc" },
       });
-      if (dbItems) {
+      if (Array.isArray(dbItems)) {
+        dbSuccess = true;
         dbDownloads = dbItems.map((item: any) => ({
           id: item.id,
           email: item.email || "Not Provided",
@@ -305,12 +337,12 @@ export async function getResumeDownloads(): Promise<ResumeDownloadItem[]> {
         }));
       }
     }
-  } catch {
-    // DB offline, fallback to memory/file store
+  } catch (err) {
+    console.error("[DB Get Resume Downloads Error]:", err);
   }
 
   const store = globalForSubmissions.inMemoryStore || readStoreFile();
-  
+
   const combined = [...dbDownloads];
   for (const item of store.downloads) {
     if (!combined.some((c) => c.id === item.id)) {
@@ -318,7 +350,11 @@ export async function getResumeDownloads(): Promise<ResumeDownloadItem[]> {
     }
   }
 
-  return combined.length > 0 ? combined : INITIAL_DATA.downloads;
+  combined.sort((a, b) => new Date(b.downloadedAt).getTime() - new Date(a.downloadedAt).getTime());
+
+  if (combined.length > 0) return combined;
+  if (!dbSuccess && store.downloads.length === 0) return INITIAL_DATA.downloads;
+  return combined;
 }
 
 export async function deleteResumeDownload(id: string) {
@@ -332,7 +368,8 @@ export async function deleteResumeDownload(id: string) {
         where: { id },
       });
     }
-  } catch {
-    // Fallback handled
+  } catch (err) {
+    console.error("[DB Delete Resume Download Error]:", err);
   }
 }
+

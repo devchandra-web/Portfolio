@@ -31,12 +31,14 @@ export default function AdminMessagesPage() {
   const [submissions, setSubmissions] = useState<ContactItem[]>([]);
   const [downloads, setDownloads] = useState<ResumeDownloadItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [activeTab, setActiveTab] = useState<"messages" | "downloads">("messages");
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setLoading(true);
+    setIsSyncing(true);
     try {
       const [subs, dls] = await Promise.all([
         fetchContactSubmissionsAction(),
@@ -48,11 +50,17 @@ export default function AdminMessagesPage() {
       // Error handling
     } finally {
       setLoading(false);
+      setIsSyncing(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    loadData(false);
+    // Real-time polling every 5 seconds for instant updates
+    const interval = setInterval(() => {
+      loadData(true);
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleMarkAsRead = async (id: string) => {
@@ -92,15 +100,21 @@ export default function AdminMessagesPage() {
     <div>
       <AdminHeader
         title="Form Submissions &amp; Resume Activity"
-        subtitle="Track incoming client messages and monitor live resume downloads from visitors."
+        subtitle="Track incoming client messages and monitor live resume downloads from visitors in real time."
         action={
-          <button
-            onClick={loadData}
-            className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/40 text-xs font-semibold flex items-center space-x-2 transition-all"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            <span>Refresh Logs</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <div className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Real-Time Sync Active</span>
+            </div>
+            <button
+              onClick={() => loadData(false)}
+              className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/40 text-xs font-semibold flex items-center space-x-2 transition-all"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-emerald-400" : ""}`} />
+              <span>Refresh Logs</span>
+            </button>
+          </div>
         }
       />
 
