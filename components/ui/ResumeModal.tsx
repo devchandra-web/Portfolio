@@ -49,7 +49,7 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ isOpen, onClose }) => 
       // Trigger standard browser file download
       const link = document.createElement("a");
       link.href = "/resume.pdf";
-      link.download = "Alok_Resume.pdf";
+      link.download = "Chandra_Shekhar_Resume.pdf";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -104,12 +104,12 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ isOpen, onClose }) => 
                 <h3 className="text-xl font-extrabold text-white tracking-tight">
                   Download Resume
                 </h3>
-                <span className="text-xs text-cyan-400 font-semibold">Alok — ASP.NET Developer</span>
+                <span className="text-xs text-cyan-400 font-semibold">Chandra Shekhar — Frontend Developer</span>
               </div>
             </div>
 
             <p className="text-xs text-slate-300 mb-6 leading-relaxed">
-              Please enter your valid email address to download Alok&apos;s official resume PDF. Your request will be recorded for quick contact.
+              Please enter your valid email address to download Chandra Shekhar&apos;s official resume PDF. Your request will be recorded for quick contact.
             </p>
 
             {isSuccess ? (

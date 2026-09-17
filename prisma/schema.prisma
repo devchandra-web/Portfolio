@@ -164,7 +164,7 @@ model SiteSettings {
   siteName      String   @default("Chandra Shekhar Portfolio")
   developerName String   @default("Chandra Shekhar")
   jobTitle      String   @default("Frontend Developer")
-  email         String   @default("chandrashekhar.dev@example.com")
+  email         String   @default("cd6388881581@gmail.com")
   location      String   @default("Bengaluru, India")
   resumeUrl     String   @default("/resume.pdf")
   availability  String   @default("Available for Hire & Frontend Projects")

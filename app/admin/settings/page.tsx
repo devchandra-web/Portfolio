@@ -12,7 +12,7 @@ export default function AdminSettingsPage() {
     siteName: "Chandra Shekhar Portfolio",
     developerName: "Chandra Shekhar",
     jobTitle: "Frontend Developer",
-    email: "chandrashekhar.dev@example.com",
+    email: "cd6388881581@gmail.com",
     location: "Bengaluru, India",
     resumeUrl: "/resume.pdf",
     availability: "Available for Hire & Frontend Projects",

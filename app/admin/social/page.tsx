@@ -19,7 +19,7 @@ interface SocialItem {
 const INITIAL_SOCIALS: SocialItem[] = [
   { id: "soc-1", platform: "GitHub", url: "https://github.com/chandrashekhar", icon: "Github", visible: true },
   { id: "soc-2", platform: "LinkedIn", url: "https://linkedin.com/in/chandrashekhar", icon: "Linkedin", visible: true },
-  { id: "soc-3", platform: "Email", url: "mailto:chandrashekhar.dev@example.com", icon: "Mail", visible: true },
+  { id: "soc-3", platform: "Email", url: "mailto:cd6388881581@gmail.com", icon: "Mail", visible: true },
   { id: "soc-4", platform: "Resume", url: "/resume.pdf", icon: "FileText", visible: true },
 ];
 
