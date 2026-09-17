@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { addContactSubmission, getContactSubmissions } from "@/lib/store/submissions";
 
 export async function POST(req: NextRequest) {
@@ -19,6 +20,13 @@ export async function POST(req: NextRequest) {
       subject: subject || "Portfolio Contact Inquiry",
       message,
     });
+
+    try {
+      revalidatePath("/admin");
+      revalidatePath("/admin/messages");
+    } catch {
+      // Ignore cache revalidation errors
+    }
 
     console.log(`[EMAIL ALERT] New contact form submission from ${name} (${email})`);
     console.log(`[EMAIL ALERT] Forwarded Notification to: cd6388881581@gmail.com`);

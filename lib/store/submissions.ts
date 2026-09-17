@@ -60,27 +60,59 @@ if (!globalForSubmissions.inMemoryStore) {
 }
 
 function readStoreFile(): StorageData {
-  // Try reading from /tmp first (on Vercel/serverless)
+  let tmpData: Partial<StorageData> | null = null;
+  let primaryData: Partial<StorageData> | null = null;
+
+  // 1. Try reading from /tmp (Vercel serverless)
   try {
     if (fs.existsSync(TMP_STORE_PATH)) {
       const content = fs.readFileSync(TMP_STORE_PATH, "utf-8");
-      return JSON.parse(content);
+      tmpData = JSON.parse(content);
     }
   } catch {
     // Ignore error
   }
 
-  // Fallback to local data directory
+  // 2. Try reading from primary store path
   try {
     if (fs.existsSync(PRIMARY_STORE_PATH)) {
       const content = fs.readFileSync(PRIMARY_STORE_PATH, "utf-8");
-      return JSON.parse(content);
+      primaryData = JSON.parse(content);
     }
   } catch {
     // Ignore error
   }
 
-  return INITIAL_DATA;
+  const submissions = [
+    ...(tmpData?.submissions || []),
+    ...(primaryData?.submissions || []),
+  ];
+
+  const downloads = [
+    ...(tmpData?.downloads || []),
+    ...(primaryData?.downloads || []),
+  ];
+
+  // Deduplicate submissions by ID
+  const uniqueSubmissions: ContactItem[] = [];
+  for (const s of submissions) {
+    if (s && s.id && !uniqueSubmissions.some((u) => u.id === s.id)) {
+      uniqueSubmissions.push(s);
+    }
+  }
+
+  // Deduplicate downloads by ID
+  const uniqueDownloads: ResumeDownloadItem[] = [];
+  for (const d of downloads) {
+    if (d && d.id && !uniqueDownloads.some((u) => u.id === d.id)) {
+      uniqueDownloads.push(d);
+    }
+  }
+
+  return {
+    submissions: uniqueSubmissions.length > 0 ? uniqueSubmissions : INITIAL_DATA.submissions,
+    downloads: uniqueDownloads.length > 0 ? uniqueDownloads : INITIAL_DATA.downloads,
+  };
 }
 
 function writeStoreFile(data: StorageData) {
@@ -125,7 +157,7 @@ export async function addContactSubmission(data: {
   const currentStore = globalForSubmissions.inMemoryStore || readStoreFile();
   const updatedStore = {
     ...currentStore,
-    submissions: [newItem, ...currentStore.submissions],
+    submissions: [newItem, ...currentStore.submissions.filter((s) => s.id !== newItem.id)],
   };
   writeStoreFile(updatedStore);
 
@@ -149,13 +181,15 @@ export async function addContactSubmission(data: {
 }
 
 export async function getContactSubmissions(): Promise<ContactItem[]> {
+  let dbSubmissions: ContactItem[] = [];
+
   try {
     if (prisma && "contactSubmission" in prisma && typeof (prisma as any).contactSubmission?.findMany === "function") {
       const dbItems = await (prisma as any).contactSubmission.findMany({
         orderBy: { createdAt: "desc" },
       });
-      if (dbItems && dbItems.length > 0) {
-        return dbItems.map((item: any) => ({
+      if (dbItems) {
+        dbSubmissions = dbItems.map((item: any) => ({
           id: item.id,
           name: item.name,
           email: item.email,
@@ -171,7 +205,16 @@ export async function getContactSubmissions(): Promise<ContactItem[]> {
   }
 
   const store = globalForSubmissions.inMemoryStore || readStoreFile();
-  return store.submissions;
+  
+  // Merge DB submissions and local store submissions seamlessly
+  const combined = [...dbSubmissions];
+  for (const item of store.submissions) {
+    if (!combined.some((c) => c.id === item.id)) {
+      combined.push(item);
+    }
+  }
+
+  return combined.length > 0 ? combined : INITIAL_DATA.submissions;
 }
 
 export async function markContactAsRead(id: string) {
@@ -245,13 +288,15 @@ export async function addResumeDownload(email: string, ip?: string, userAgent?: 
 }
 
 export async function getResumeDownloads(): Promise<ResumeDownloadItem[]> {
+  let dbDownloads: ResumeDownloadItem[] = [];
+
   try {
     if (prisma && "resumeDownload" in prisma && typeof (prisma as any).resumeDownload?.findMany === "function") {
       const dbItems = await (prisma as any).resumeDownload.findMany({
         orderBy: { downloadedAt: "desc" },
       });
-      if (dbItems && dbItems.length > 0) {
-        return dbItems.map((item: any) => ({
+      if (dbItems) {
+        dbDownloads = dbItems.map((item: any) => ({
           id: item.id,
           email: item.email || "Not Provided",
           ip: item.ip || "127.0.0.1",
@@ -265,7 +310,15 @@ export async function getResumeDownloads(): Promise<ResumeDownloadItem[]> {
   }
 
   const store = globalForSubmissions.inMemoryStore || readStoreFile();
-  return store.downloads;
+  
+  const combined = [...dbDownloads];
+  for (const item of store.downloads) {
+    if (!combined.some((c) => c.id === item.id)) {
+      combined.push(item);
+    }
+  }
+
+  return combined.length > 0 ? combined : INITIAL_DATA.downloads;
 }
 
 export async function deleteResumeDownload(id: string) {

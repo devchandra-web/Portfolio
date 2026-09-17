@@ -1,5 +1,15 @@
 {
-  "submissions": [],
+  "submissions": [
+    {
+      "id": "sub-1",
+      "name": "Rahul Sharma",
+      "email": "rahul.sharma@example.com",
+      "subject": "Frontend Developer Inquiry",
+      "message": "Hi Chandra, we reviewed your profile and experience in React and Next.js. We would like to discuss a Frontend Developer role with our team.",
+      "read": false,
+      "createdAt": "2026-09-17T08:00:00.000Z"
+    }
+  ],
   "downloads": [
     {
       "id": "dl-1789630340090",
