@@ -36,6 +36,43 @@ export default function AdminMessagesPage() {
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
+  // Initialize state from localStorage to prevent UI flickering on mount or serverless polling
+  useEffect(() => {
+    try {
+      const savedSubs = localStorage.getItem("portfolio_admin_submissions");
+      const savedDls = localStorage.getItem("portfolio_admin_downloads");
+      if (savedSubs) setSubmissions(JSON.parse(savedSubs));
+      if (savedDls) setDownloads(JSON.parse(savedDls));
+    } catch {
+      // Ignore parse errors
+    }
+  }, []);
+
+  // Save state to localStorage whenever it updates
+  const updateSubmissionsState = (updater: (prev: ContactItem[]) => ContactItem[]) => {
+    setSubmissions((prev) => {
+      const next = updater(prev);
+      try {
+        localStorage.setItem("portfolio_admin_submissions", JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  const updateDownloadsState = (updater: (prev: ResumeDownloadItem[]) => ResumeDownloadItem[]) => {
+    setDownloads((prev) => {
+      const next = updater(prev);
+      try {
+        localStorage.setItem("portfolio_admin_downloads", JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
   const loadData = async (silent = false) => {
     if (!silent) setLoading(true);
     setIsSyncing(true);
@@ -44,31 +81,80 @@ export default function AdminMessagesPage() {
         fetch("/api/contact", { cache: "no-store" }),
         fetch("/api/resume-download", { cache: "no-store" }),
       ]);
+      
+      let incomingSubs: ContactItem[] = [];
+      let incomingDls: ResumeDownloadItem[] = [];
+
       if (subsRes.ok && dlsRes.ok) {
         const subsJson = await subsRes.json();
         const dlsJson = await dlsRes.json();
         if (subsJson.success && Array.isArray(subsJson.data)) {
-          setSubmissions(subsJson.data);
+          incomingSubs = subsJson.data;
         }
         if (dlsJson.success && Array.isArray(dlsJson.data)) {
-          setDownloads(dlsJson.data);
+          incomingDls = dlsJson.data;
         }
       } else {
         const [subs, dls] = await Promise.all([
           fetchContactSubmissionsAction(),
           fetchResumeDownloadsAction(),
         ]);
-        setSubmissions(subs);
-        setDownloads(dls);
+        incomingSubs = subs || [];
+        incomingDls = dls || [];
+      }
+
+      // Merge incoming items safely with existing state without losing data or wiping screen on empty polls
+      if (incomingSubs.length > 0) {
+        updateSubmissionsState((prev) => {
+          const map = new Map<string, ContactItem>();
+          for (const item of prev) map.set(item.id, item);
+          for (const item of incomingSubs) map.set(item.id, item);
+          const merged = Array.from(map.values());
+          merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          return merged;
+        });
+      }
+
+      if (incomingDls.length > 0) {
+        updateDownloadsState((prev) => {
+          const map = new Map<string, ResumeDownloadItem>();
+          for (const item of prev) map.set(item.id, item);
+          for (const item of incomingDls) map.set(item.id, item);
+          const merged = Array.from(map.values());
+          merged.sort((a, b) => new Date(b.downloadedAt).getTime() - new Date(a.downloadedAt).getTime());
+          return merged;
+        });
       }
     } catch {
       // Fallback to Server Actions if fetch fails
-      const [subs, dls] = await Promise.all([
-        fetchContactSubmissionsAction(),
-        fetchResumeDownloadsAction(),
-      ]);
-      setSubmissions(subs);
-      setDownloads(dls);
+      try {
+        const [subs, dls] = await Promise.all([
+          fetchContactSubmissionsAction(),
+          fetchResumeDownloadsAction(),
+        ]);
+        if (subs && subs.length > 0) {
+          updateSubmissionsState((prev) => {
+            const map = new Map<string, ContactItem>();
+            for (const item of prev) map.set(item.id, item);
+            for (const item of subs) map.set(item.id, item);
+            const merged = Array.from(map.values());
+            merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            return merged;
+          });
+        }
+        if (dls && dls.length > 0) {
+          updateDownloadsState((prev) => {
+            const map = new Map<string, ResumeDownloadItem>();
+            for (const item of prev) map.set(item.id, item);
+            for (const item of dls) map.set(item.id, item);
+            const merged = Array.from(map.values());
+            merged.sort((a, b) => new Date(b.downloadedAt).getTime() - new Date(a.downloadedAt).getTime());
+            return merged;
+          });
+        }
+      } catch {
+        // Retain existing state
+      }
     } finally {
       setLoading(false);
       setIsSyncing(false);
@@ -85,7 +171,7 @@ export default function AdminMessagesPage() {
   }, []);
 
   const handleMarkAsRead = async (id: string) => {
-    setSubmissions((prev) =>
+    updateSubmissionsState((prev) =>
       prev.map((s) => (s.id === id ? { ...s, read: true } : s))
     );
     await markContactAsReadAction(id);
@@ -95,7 +181,7 @@ export default function AdminMessagesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this contact submission?")) return;
-    setSubmissions((prev) => prev.filter((s) => s.id !== id));
+    updateSubmissionsState((prev) => prev.filter((s) => s.id !== id));
     await deleteContactSubmissionAction(id);
     setStatusMessage("Message deleted.");
     setTimeout(() => setStatusMessage(null), 3000);
@@ -103,7 +189,7 @@ export default function AdminMessagesPage() {
 
   const handleDeleteDownload = async (id: string) => {
     if (!confirm("Are you sure you want to delete this resume download log?")) return;
-    setDownloads((prev) => prev.filter((d) => d.id !== id));
+    updateDownloadsState((prev) => prev.filter((d) => d.id !== id));
     await deleteResumeDownloadAction(id);
     setStatusMessage("Resume download log deleted.");
     setTimeout(() => setStatusMessage(null), 3000);
