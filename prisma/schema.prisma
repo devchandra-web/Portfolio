@@ -1,0 +1,205 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("ADMIN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Hero {
+  id                 String   @id @default("hero-main")
+  name               String   @default("Chandra Shekhar")
+  role               String   @default("Frontend Developer")
+  headline           String   @default("Building Modern Web Experiences That Perform.")
+  subtitle           String   @default("I'm Chandra Shekhar, a Frontend Developer focused on building responsive, scalable and visually engaging web applications with React and Next.js.")
+  description        String   @default("Passionate about clean component architecture, responsive layout design, web performance optimization, and REST API integration.")
+  primaryCtaText     String   @default("View My Work")
+  primaryCtaUrl      String   @default("#projects")
+  secondaryCtaText   String   @default("Let's Talk")
+  secondaryCtaUrl    String   @default("#contact")
+  resumeUrl          String   @default("/resume.pdf")
+  profileImage       String   @default("/images/project-saas.svg")
+  heroImage          String?
+  availabilityStatus String   @default("Available for Hire & Frontend Projects")
+  updatedAt          DateTime @updatedAt
+}
+
+model About {
+  id                    String   @id @default("about-main")
+  title                 String   @default("Engineering Sleek & Scalable Interfaces")
+  introduction          String   @default("I specialize in turning complex product ideas into fast, accessible, and production-ready frontend web applications.")
+  description           String   @default("My expertise centers around the modern React ecosystem—specifically Next.js App Router, TypeScript, and Tailwind CSS. I write clean, maintainable code that delivers real business value.")
+  profileImage          String   @default("/images/project-saas.svg")
+  location              String   @default("Bengaluru, India (Available Remote Worldwide)")
+  availability          String   @default("Full-Time / Freelance")
+  developmentPhilosophy String   @default("Building reusable components, responsive-first layout design, clean TypeScript typing, and relentless performance optimization.")
+  approach              String   @default("01 Understand -> 02 Design -> 03 Build -> 04 Test -> 05 Optimize -> 06 Deploy")
+  personalSummary       String   @default("Dedicated frontend developer with 3+ years of experience engineering high-impact web apps.")
+  updatedAt             DateTime @updatedAt
+}
+
+model Skill {
+  id           String   @id @default(cuid())
+  name         String
+  category     String   @default("Frontend") // Frontend, Styling, Tools, API, Other
+  icon         String   @default("Code2")
+  level        String   @default("Expert") // Expert, Advanced, Proficient
+  visible      Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Project {
+  id               String   @id @default(cuid())
+  title            String
+  slug             String   @unique
+  subtitle         String   @default("")
+  shortDescription String
+  fullDescription  String
+  category         String   @default("SaaS")
+  problem          String
+  solution         String
+  features         String   // JSON stringified array or text
+  challenges       String   // JSON stringified array or text
+  result           String
+  mainImage        String
+  galleryImages    String   @default("[]")
+  liveDemoUrl      String   @default("#")
+  githubUrl        String   @default("#")
+  caseStudy        String   // Detailed text
+  featured         Boolean  @default(false)
+  published        Boolean  @default(true)
+  displayOrder     Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  publishedAt      DateTime?
+
+  technologies     ProjectTechnology[]
+}
+
+model Technology {
+  id       String              @id @default(cuid())
+  name     String              @unique
+  slug     String              @unique
+  icon     String?
+  projects ProjectTechnology[]
+}
+
+model ProjectTechnology {
+  projectId    String
+  technologyId String
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  technology   Technology @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, technologyId])
+}
+
+model Experience {
+  id              String   @id @default(cuid())
+  company         String
+  role            String
+  location        String
+  startDate       String
+  endDate         String
+  description     String
+  responsibilities String  // JSON array string
+  technologies    String   // JSON array string
+  currentPosition Boolean  @default(false)
+  displayOrder    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Service {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  icon         String   @default("Code")
+  deliverables String   @default("[]")
+  visible      Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model SocialLink {
+  id           String   @id @default(cuid())
+  platform     String   @unique
+  url          String
+  icon         String   @default("Globe")
+  visible      Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model SEO {
+  id                 String   @id @default("seo-main")
+  siteTitle          String   @default("Chandra Shekhar | Frontend Developer")
+  metaDescription    String   @default("Frontend Developer specializing in building responsive, scalable, and visually engaging web applications with React, Next.js, TypeScript, and Tailwind CSS.")
+  ogTitle            String   @default("Chandra Shekhar | Frontend Developer Portfolio")
+  ogDescription      String   @default("Building modern web experiences that perform. Specializing in React, Next.js, TypeScript, and high-performance UI engineering.")
+  ogImage            String   @default("/images/project-saas.svg")
+  twitterTitle       String   @default("Chandra Shekhar | Frontend Developer")
+  twitterDescription String   @default("Frontend Developer building scalable web applications with React, Next.js, and TypeScript.")
+  twitterImage       String   @default("/images/project-saas.svg")
+  canonicalUrl       String   @default("https://chandrashekhar-portfolio.vercel.app")
+  updatedAt          DateTime @updatedAt
+}
+
+model SiteSettings {
+  id            String   @id @default("settings-main")
+  siteName      String   @default("Chandra Shekhar Portfolio")
+  developerName String   @default("Chandra Shekhar")
+  jobTitle      String   @default("Frontend Developer")
+  email         String   @default("chandrashekhar.dev@example.com")
+  location      String   @default("Bengaluru, India")
+  resumeUrl     String   @default("/resume.pdf")
+  availability  String   @default("Available for Hire & Frontend Projects")
+  copyright     String   @default("© 2026 Chandra Shekhar. All rights reserved.")
+  theme         String   @default("dark")
+  analyticsId   String?
+  updatedAt     DateTime @updatedAt
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  mimeType  String
+  size      Int
+  publicId  String?
+  createdAt DateTime @default(now())
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ResumeDownload {
+  id           String   @id @default(cuid())
+  email        String   @default("Not Provided")
+  ip           String?
+  userAgent    String?
+  referrer     String?
+  downloadedAt DateTime @default(now())
+}
+
