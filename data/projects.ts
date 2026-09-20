@@ -100,7 +100,7 @@ export const PROJECTS_DATA: Project[] = [
     technologies: ['Next.js 15', 'TypeScript', 'Tailwind CSS', 'Stripe API', 'React 19'],
     featured: true,
     image: '/images/project-learnhub.svg',
-    demoUrl: 'https://github.com/devchandra-web/Learnhub',
+    demoUrl: 'https://learnhub-chi-nine.vercel.app/',
     githubUrl: 'https://github.com/devchandra-web/Learnhub',
     keyFeatures: [
       'Next.js 15 App Router Architecture with Server Components',
@@ -149,7 +149,7 @@ export const PROJECTS_DATA: Project[] = [
       ],
       responsiveDesign: 'Tailored mobile-first layout with sticky enrollment CTA toolbar on mobile viewports and multi-column grid on desktop screens.',
       result: 'Successfully deployed a high-performance digital marketplace platform ready for course monetization.',
-      liveDemoUrl: 'https://github.com/devchandra-web/Learnhub',
+      liveDemoUrl: 'https://learnhub-chi-nine.vercel.app/',
       githubUrl: 'https://github.com/devchandra-web/Learnhub',
     },
   },
