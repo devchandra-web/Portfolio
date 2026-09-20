@@ -94,8 +94,8 @@ export default function RootLayout({
                 jobTitle: "Frontend Developer",
                 url: "https://chandrashekhar-portfolio.vercel.app",
                 sameAs: [
-                  "https://github.com/chandrashekhar",
-                  "https://linkedin.com/in/chandrashekhar",
+                  "https://github.com/devchandra-web",
+                  "https://www.linkedin.com/in/chandra-shekhar-62950927a/",
                 ],
                 knowsAbout: [
                   "React.js",

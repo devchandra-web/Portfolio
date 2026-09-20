@@ -74,7 +74,7 @@ export const Navbar: React.FC = () => {
           {/* Right Action Icons & Resume Button */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             <a
-              href="https://github.com/chandrashekhar"
+              href="https://github.com/devchandra-web"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub Profile"
@@ -84,7 +84,7 @@ export const Navbar: React.FC = () => {
             </a>
 
             <a
-              href="https://linkedin.com/in/chandrashekhar"
+              href="https://www.linkedin.com/in/chandra-shekhar-62950927a/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn Profile"

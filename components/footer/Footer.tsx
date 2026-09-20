@@ -42,7 +42,7 @@ export const Footer: React.FC = () => {
           {/* Social Icons & Back to Top */}
           <div className="md:col-span-3 flex items-center md:justify-end space-x-3">
             <a
-              href="https://github.com/chandrashekhar"
+              href="https://github.com/devchandra-web"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub Profile"
@@ -52,7 +52,7 @@ export const Footer: React.FC = () => {
             </a>
 
             <a
-              href="https://linkedin.com/in/chandrashekhar"
+              href="https://www.linkedin.com/in/chandra-shekhar-62950927a/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn Profile"

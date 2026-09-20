@@ -121,7 +121,7 @@ export const HeroSection: React.FC = () => {
             {/* Social Media Icons Bar */}
             <div className="flex items-center space-x-4 pt-2">
               <a
-                href="https://linkedin.com"
+                href="https://www.linkedin.com/in/chandra-shekhar-62950927a/"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="LinkedIn Profile"
@@ -131,7 +131,7 @@ export const HeroSection: React.FC = () => {
               </a>
 
               <a
-                href="https://github.com"
+                href="https://github.com/devchandra-web"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="GitHub Profile"

@@ -103,7 +103,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onClose, navLinks 
 
               <div className="flex items-center justify-center space-x-4 pt-2">
                 <a
-                  href="https://github.com/chandrashekhar"
+                  href="https://github.com/devchandra-web"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="GitHub Profile"
@@ -112,7 +112,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onClose, navLinks 
                   <GithubIcon className="w-5 h-5" />
                 </a>
                 <a
-                  href="https://linkedin.com/in/chandrashekhar"
+                  href="https://www.linkedin.com/in/chandra-shekhar-62950927a/"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="LinkedIn Profile"
