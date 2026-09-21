@@ -166,6 +166,16 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ isOpen, onClose }) => 
                     </>
                   )}
                 </button>
+
+                <div className="pt-1 text-center">
+                  <a
+                    href="/resume.pdf"
+                    download="Chandra_Shekhar_Resume.pdf"
+                    className="text-xs text-slate-400 hover:text-cyan-400 underline transition-colors"
+                  >
+                    Or download directly (PDF)
+                  </a>
+                </div>
               </form>
             )}
           </motion.div>
