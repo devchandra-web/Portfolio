@@ -13,8 +13,8 @@ const NAV_LINKS = [
   { name: "Skills", href: "#skills" },
   { name: "Projects", href: "#projects" },
   { name: "Experience", href: "#experience" },
-  { name: "Blog", href: "#blog" },
-  { name: "Gallery", href: "#gallery" },
+  // { name: "Blog", href: "#blog" },
+  // { name: "Gallery", href: "#gallery" },
   { name: "Contact", href: "#contact" },
 ];
 
@@ -37,11 +37,10 @@ export const Navbar: React.FC = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
-        isScrolled
+      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${isScrolled
           ? "glass-nav py-3 shadow-xl shadow-slate-950/20"
           : "bg-transparent py-5"
-      }`}
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
