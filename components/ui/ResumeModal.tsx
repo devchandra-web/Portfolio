@@ -47,9 +47,10 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ isOpen, onClose }) => 
       setIsSuccess(true);
 
       // Trigger standard browser file download
+      const downloadUrl = data.downloadUrl || "/resume.pdf";
       const link = document.createElement("a");
-      link.href = "/resume.pdf";
-      link.download = "Chandra_Shekhar_Resume.pdf";
+      link.href = downloadUrl;
+      link.download = downloadUrl.endsWith(".pdf") ? "Chandra_Shekhar_Resume.pdf" : "Chandra_Shekhar_Resume.png";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

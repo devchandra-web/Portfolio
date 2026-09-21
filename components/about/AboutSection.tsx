@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Rocket, Briefcase, Mail, Phone, MapPin, Send, Download } from "lucide-react";
 import { ResumeModal } from "../ui/ResumeModal";
+import { PROJECTS_DATA } from "@/data/projects";
 
 export const AboutSection: React.FC = () => {
   const [resumeModalOpen, setResumeModalOpen] = useState(false);
@@ -60,7 +61,7 @@ export const AboutSection: React.FC = () => {
                   <Rocket className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div>
-                  <span className="block text-lg font-black text-white leading-none">2</span>
+                  <span className="block text-lg font-black text-white leading-none">{PROJECTS_DATA.length}</span>
                   <span className="block text-[11px] font-semibold text-slate-400 mt-1">Projects Done</span>
                 </div>
               </div>
